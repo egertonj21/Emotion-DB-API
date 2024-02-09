@@ -3,6 +3,53 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 
+exports.getUserHashedPassword = (req, res) => {
+    const { username, password } = req.body;
+    const selectSQL = 'SELECT hashed_password FROM users WHERE username =?';
+
+    conn.query(selectSQL, [username], (error, rows) =>{
+        if(error) {
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: 'Database error'
+            });
+        }
+        if (rows.length ===0){
+            res.status(404);
+            return res.json({
+                status:'failure',
+                message: 'User not found'
+            });
+        }
+    const hashedPassword = rows[0].hashed_password
+    bcrypt.compare(password, hashedPassword, function(error, result){
+        if (error) {
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: 'password comparison error'
+            });
+        }
+        if(result){
+            res.status(200);
+            return res.json({
+                status: 'success',
+                message: 'Password matches'
+            });
+        }else{
+            res.status(401);
+            return res.json({
+                status: 'failure',
+                message: 'Incorrect password'
+            });
+        }
+    
+    
+    });
+});
+};
+
 exports.getEmotionsForUserID = (req, res) => {
     const { user_id } = req.params; 
     const selectSQL = 'SELECT * FROM emotion WHERE user_id =?';
