@@ -161,3 +161,84 @@ exports.postInsertEmotionLog = (req, res) => {
         }
     });
 };
+
+exports.putChangeTrigger = (req, res) => {
+    const { emotion_id, triggers } = req.body;
+    
+    const insertSQL = "UPDATE emotion SET triggers = ? WHERE emotion_id = ?";
+
+    conn.query(insertSQL, [triggers, emotion_id], (error, rows) => {
+        if(error){
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: error
+            });
+        }else {
+            res.status(200);
+            return res.json({
+                status: 'success',
+                message: `triggers for emotion_id ${emotion_id} successfully updated`,
+                result: rows
+            });
+        }
+    });
+};
+
+exports.deleteEmotion = (req, res) => {
+    const { emotion_id} = req.body;
+
+    const deleteSQL = "DELETE FROM emotion WHERE emotion_id = ?";
+    conn.query(deleteSQL, [emotion_id], (error, rows) =>{
+        if(error){
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: error
+            });
+        }else {
+            res.status(200);
+            return res.json({
+                status: 'success',
+                message: `emotion_id ${emotion_id}, successfully deleted`,
+                result: rows
+            });
+        }
+    });
+};
+
+exports.deleteAll = (req, res) => {
+    const { user_id } = req.body;
+
+    const deleteSQL = "DELETE FROM emotion WHERE user_id = ?";
+    const deleteUserSQL = "DELETE FROM users WHERE user_id = ?";
+    console.log(user_id);
+    conn.query(deleteSQL, [user_id], (error, emotionRows) => {
+        if (error) {
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: error
+            });
+        } else {
+            // If the emotion deletion was successful, proceed to delete the user
+            conn.query(deleteUserSQL, [user_id], (error, userRows) => {
+                if (error) {
+                    res.status(500);
+                    return res.json({
+                        status: 'failure',
+                        message: error
+                    });
+                } else {
+                    res.status(200);
+                    return res.json({
+                        status: 'success',
+                        message: `Logs and user deleted for user ${user_id}`,
+                        emotionResult: emotionRows,
+                        userResult: userRows
+                    });
+                }
+            });
+        }
+    });
+};
