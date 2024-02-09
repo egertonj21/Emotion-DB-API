@@ -4,7 +4,7 @@ const router = express.Router();
 const sqlQueries = require('./../queries/queries');
 
 
-router.get('/login', controller.getUserHashedPassword);
+router.post('/login', controller.getUserHashedPassword);
 router.get('/user/:user_id', controller.getEmotionsForUserID);
 router.get('/username/:username', controller.getUserIDFromUsername);
 router.get('/:emotion_id', controller.getEmotionfromEmotionID);
