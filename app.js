@@ -5,6 +5,7 @@ const router = require('./routes/apiRoutes');
 
 const app = express();
 
+app.use(express.json());
 app.use(morgan('tiny'));
 
 app.use('/emotion', router);

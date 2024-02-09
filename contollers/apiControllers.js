@@ -1,4 +1,7 @@
 const conn = require('./../utils/dbconn');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 
 exports.getEmotionsForUserID = (req, res) => {
     const { user_id } = req.params; 
@@ -87,6 +90,74 @@ exports.getEmotionfromEmotionID = (req, res) => {
                     message:'Invalid ID'
                 });
             }
+        }
+    });
+};
+
+
+exports.postInsertUser = (req, res) => {
+    const { username, password } = req.body;
+    console.log(username);
+    console.log(password);
+
+    // Generate a salt and hash the password
+    bcrypt.genSalt(saltRounds, function(error, salt) {
+        bcrypt.hash(password, salt, function(err, hashedPassword) {
+            // Handle any errors during hashing
+            if (err) {
+                res.status(500);
+                return res.json({
+                    status: 'failure',
+                    message: 'Error hashing password'
+                });
+            }
+
+            // Construct the SQL query to insert user data into the database
+            const insertSQL = 'INSERT INTO users (username, hashed_password) VALUES (?, ?)';
+            console.log("SQL Query:", insertSQL, [username, hashedPassword]);
+
+            // Execute the SQL query
+            conn.query(insertSQL, [username, hashedPassword], (error, rows) => {
+                if (error) {
+                    res.status(500);
+                    return res.json({
+                        status: 'failure',
+                        message: error
+                    });
+                } else {
+                    res.status(200);
+                    return res.json({
+                        status: 'success',
+                        message: `User ${username} added to database`,
+                        result: rows
+                    });
+                }
+            });
+        });
+    });
+};
+
+exports.postInsertEmotionLog = (req, res) => {
+    const { user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers } = req.body;
+    // Construct the SQL query to insert emotion data into the database
+    const insertSQL = 'INSERT INTO emotion (user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)';
+    console.log("SQL Query:", insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers]);
+
+    // Execute the SQL query
+    conn.query(insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers], (error, rows) => {
+        if (error) {
+            res.status(500);
+            return res.json({
+                status: 'failure',
+                message: error
+            });
+        } else {
+            res.status(200);
+            return res.json({
+                status: 'success',
+                message: `emotion added to database for user ${user_id}`,
+                result: rows
+            });
         }
     });
 };
