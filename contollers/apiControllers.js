@@ -83,7 +83,7 @@ exports.getEmotionsForUserID = (req, res) => {
 
 exports.getUserIDFromUsername = (req, res) => {
     const { username } = req.params;
-    const selectSQL = 'SELECT user_id from users WHERE username =?';
+    const selectSQL = 'SELECT user_id from users WHERE username = ?';
     console.log("SQL Query:", selectSQL, [username]);
     conn.query(selectSQL, [username], (error, rows) => {
         if (error) {
