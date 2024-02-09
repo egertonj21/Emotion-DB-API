@@ -1,6 +1,7 @@
 const express = require('express');
 const controller = require('./../contollers/apiControllers');
 const router = express.Router();
+const sqlQueries = require('./../queries/queries');
 
 
 router.get('/login', controller.getUserHashedPassword);

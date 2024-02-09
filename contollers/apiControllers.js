@@ -1,6 +1,7 @@
 const conn = require('./../utils/dbconn');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+// const sqlQueries = require('./../queries/queries');
 
 
 exports.getUserHashedPassword = (req, res) => {
