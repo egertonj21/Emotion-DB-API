@@ -6,7 +6,7 @@ const sqlQueries = require('./../queries/queries');
 
 router.post('/login', controller.getUserHashedPassword);
 router.get('/user/:user_id', controller.getEmotionsForUserID);
-router.get('/username/:username', controller.getUserIDFromUsername);
+router.post('/username/:username', controller.getUserIDFromUsername);
 router.get('/:emotion_id', controller.getEmotionfromEmotionID);
 router.post('/add/user', controller.postInsertUser);
 router.post('/add/emotion', controller.postInsertEmotionLog);
