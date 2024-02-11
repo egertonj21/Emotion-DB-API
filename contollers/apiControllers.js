@@ -234,7 +234,7 @@ exports.putChangeTrigger = (req, res) => {
 };
 
 exports.deleteEmotion = (req, res) => {
-    const { emotion_id} = req.body;
+    const { emotion_id} = req.params;
 
     const deleteSQL = "DELETE FROM emotion WHERE emotion_id = ?";
     conn.query(deleteSQL, [emotion_id], (error, rows) =>{
