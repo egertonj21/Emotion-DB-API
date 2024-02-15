@@ -88,29 +88,28 @@ exports.getUserIDFromUsername = (req, res) => {
     console.log("SQL Query:", selectSQL, [username]);
     conn.query(selectSQL, [username], (error, rows) => {
         if (error) {
-            res.status(500);
-            res.json({
+            console.error("Error executing SQL query:", error);
+            res.status(500).json({
                 status: 'failure',
-                message: error
+                message: 'An error occurred while fetching user ID'
             });
         } else {
-            if(rows.length >0){
-                res.status(200);
-                res.json({
+            if (rows.length > 0) {
+                res.status(200).json({
                     status: 'success',
-                    message: `User_id for user ${username} retrieved`,
+                    message: `User ID for user ${username} retrieved`,
                     result: rows
                 });
-            }else{
-                res.status(404);
-                res.json({
-                    status:'failure',
-                    message:'Invalid ID'
+            } else {
+                res.status(404).json({
+                    status: 'failure',
+                    message: 'User not found'
                 });
             }
         }
     });
 };
+
 
 exports.getEmotionfromEmotionID = (req, res) => {
     const { emotion_id } = req.params;
