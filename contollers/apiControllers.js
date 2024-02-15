@@ -5,10 +5,10 @@ const saltRounds = 10;
 
 
 exports.getUserHashedPassword = (req, res) => {
-    const { username, password } = req.body;
-    const selectSQL = 'SELECT hashed_password FROM users WHERE username =?';
+    const { email, password } = req.body;
+    const selectSQL = 'SELECT hashed_password FROM users WHERE email =?';
 
-    conn.query(selectSQL, [username], (error, rows) =>{
+    conn.query(selectSQL, [email], (error, rows) =>{
         if(error) {
             res.status(500);
             return res.json({
@@ -82,11 +82,11 @@ exports.getEmotionsForUserID = (req, res) => {
     });
 };
 
-exports.getUserIDFromUsername = (req, res) => {
-    const { username } = req.params;
-    const selectSQL = 'SELECT user_id from users WHERE username = ?';
-    console.log("SQL Query:", selectSQL, [username]);
-    conn.query(selectSQL, [username], (error, rows) => {
+exports.getUserIDFromEmail = (req, res) => {
+    const { email } = req.params;
+    const selectSQL = 'SELECT user_id from users WHERE email = ?';
+    console.log("SQL Query:", selectSQL, [email]);
+    conn.query(selectSQL, [email], (error, rows) => {
         if (error) {
             console.error("Error executing SQL query:", error);
             res.status(500).json({
@@ -97,7 +97,7 @@ exports.getUserIDFromUsername = (req, res) => {
             if (rows.length > 0) {
                 res.status(200).json({
                     status: 'success',
-                    message: `User ID for user ${username} retrieved`,
+                    message: `User ID for user ${email} retrieved`,
                     result: rows
                 });
             } else {
@@ -143,8 +143,8 @@ exports.getEmotionfromEmotionID = (req, res) => {
 
 
 exports.postInsertUser = (req, res) => {
-    const { username, password } = req.body;
-    console.log(username);
+    const { email, password } = req.body;
+    console.log(email);
     console.log(password);
 
     // Generate a salt and hash the password
@@ -160,11 +160,11 @@ exports.postInsertUser = (req, res) => {
             }
 
             // Construct the SQL query to insert user data into the database
-            const insertSQL = 'INSERT INTO users (username, hashed_password) VALUES (?, ?)';
-            console.log("SQL Query:", insertSQL, [username, hashedPassword]);
+            const insertSQL = 'INSERT INTO users (email, hashed_password) VALUES (?, ?)';
+            console.log("SQL Query:", insertSQL, [email, hashedPassword]);
 
             // Execute the SQL query
-            conn.query(insertSQL, [username, hashedPassword], (error, rows) => {
+            conn.query(insertSQL, [email, hashedPassword], (error, rows) => {
                 if (error) {
                     res.status(500);
                     return res.json({
@@ -175,7 +175,7 @@ exports.postInsertUser = (req, res) => {
                     res.status(200);
                     return res.json({
                         status: 'success',
-                        message: `User ${username} added to database`,
+                        message: `User ${email} added to database`,
                         result: rows
                     });
                 }
