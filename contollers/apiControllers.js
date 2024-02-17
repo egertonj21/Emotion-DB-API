@@ -296,8 +296,8 @@ exports.deleteAll = (req, res) => {
 
 exports.getEmotionsforUserIDbyDate = (req, res) => {
     const { user_id } = req.params; 
-    const startDate = req.body.startDate;
-    const endDate = req.body.endDate;
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
     const selectSQL = "SELECT * FROM emotion WHERE user_id = ? AND timestamp BETWEEN ? and ?";
     console.log("SQL Query:", selectSQL, [user_id]);
     conn.query(selectSQL, [user_id, startDate, endDate], (error, rows) => { 
