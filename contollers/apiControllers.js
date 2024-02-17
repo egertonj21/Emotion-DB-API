@@ -1,7 +1,10 @@
 const conn = require('./../utils/dbconn');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
-// const sqlQueries = require('./../queries/queries');
+const dayjs = require('dayjs');
+var localizedFormat = require('dayjs/plugin/localizedFormat');
+dayjs.extend(localizedFormat);
+dayjs().format('LLL');
 
 
 exports.getUserHashedPassword = (req, res) => {
@@ -186,12 +189,13 @@ exports.postInsertUser = (req, res) => {
 
 exports.postInsertEmotionLog = (req, res) => {
     const { user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers } = req.body;
+    const timestamp = dayjs().format('YYYY-MM-DD HH:mm:ss');
     // Construct the SQL query to insert emotion data into the database
-    const insertSQL = 'INSERT INTO emotion (user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)';
-    console.log("SQL Query:", insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers]);
+    const insertSQL = 'INSERT INTO emotion (user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    console.log("SQL Query:", insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers]);
 
     // Execute the SQL query
-    conn.query(insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers], (error, rows) => {
+    conn.query(insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers], (error, rows) => {
         if (error) {
             res.status(500);
             return res.json({
@@ -286,6 +290,39 @@ exports.deleteAll = (req, res) => {
                     });
                 }
             });
+        }
+    });
+};
+
+exports.getEmotionsforUserIDbyDate = (req, res) => {
+    const { user_id } = req.params; 
+    const startDate = req.body.startDate;
+    const endDate = req.body.endDate;
+    const selectSQL = "SELECT * FROM emotion WHERE user_id = ? AND timestamp BETWEEN ? and ?";
+    console.log("SQL Query:", selectSQL, [user_id]);
+    conn.query(selectSQL, [user_id, startDate, endDate], (error, rows) => { 
+        console.log(user_id);
+        if (error) {
+            res.status(500);
+            res.json({
+                status: 'failure',
+                message: error
+            });
+        } else {
+            if(rows.length >0){
+                res.status(200);
+                res.json({
+                    status: 'success',
+                    message: `${rows.length} records retrieved`,
+                    result: rows
+                });
+            }else{
+                res.status(404);
+                res.json({
+                    status:'failure',
+                    message:'Invalid ID'
+                });
+            }
         }
     });
 };

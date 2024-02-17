@@ -13,5 +13,6 @@ router.post('/add/emotion', controller.postInsertEmotionLog);
 router.put('/updatetrigger', controller.putChangeTrigger);
 router.delete('/delete/:emotion_id', controller.deleteEmotion);
 router.delete('/deleteuser', controller.deleteAll);
+router.get('/userByDate/:user_id', controller.getEmotionsforUserIDbyDate);
 
 module.exports = router;
