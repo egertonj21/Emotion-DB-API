@@ -55,30 +55,28 @@ exports.getUserHashedPassword = (req, res) => {
 };
 
 exports.getEmotionsForUserID = (req, res) => {
-    const { user_id } = req.params; 
-    const selectSQL = 'SELECT * FROM emotion WHERE user_id =?';
+    const { user_id } = req.params;
+    const selectSQL = 'SELECT * FROM emotion WHERE user_id = ?';
     console.log("SQL Query:", selectSQL, [user_id]);
-    conn.query(selectSQL, [user_id], (error, rows) => { 
+    
+    conn.query(selectSQL, [user_id], (error, rows) => {
         console.log(user_id);
         if (error) {
-            res.status(500);
-            res.json({
+            res.status(500).json({
                 status: 'failure',
                 message: error
             });
         } else {
-            if(rows.length >0){
-                res.status(200);
-                res.json({
+            if (rows.length > 0) {
+                res.status(200).json({
                     status: 'success',
-                    message: `${rows.length} records retrieved`,
+                    message: `${rows.length} record(s) retrieved`,
                     result: rows
                 });
-            }else{
-                res.status(404);
-                res.json({
-                    status:'failure',
-                    message:'Invalid ID'
+            } else {
+                res.status(404).json({
+                    status: 'failure',
+                    message: 'No records found for the specified user ID'
                 });
             }
         }
@@ -348,6 +346,29 @@ exports.putPasswordChange = (req, res) => {
             }
 
             res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+};
+exports.deleteAllEmotion = (req, res) => {
+    const { user_id } = req.params;
+
+    const deleteSQL = "DELETE FROM emotion WHERE user_id = ?";
+    
+    console.log(user_id);
+    conn.query(deleteSQL, [user_id], (error, emotionRows) => {
+        if (error) {
+            console.error('Error deleting emotions:', error);
+            res.status(500).json({
+                status: 'failure',
+                message: 'Could not delete emotions'
+            });
+            // End the request-response cycle
+            return;
+        } 
+        // Send a success response
+        res.status(200).json({
+            status: 'success',
+            message: 'Emotions deleted successfully'
         });
     });
 };

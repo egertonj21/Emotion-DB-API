@@ -13,6 +13,7 @@ router.post('/add/emotion', controller.postInsertEmotionLog);
 router.put('/updatetrigger', controller.putChangeTrigger);
 router.delete('/delete/:emotion_id', controller.deleteEmotion);
 router.delete('/deleteuser', controller.deleteAll);
+router.delete('/deleteEmotion/:user_id', controller.deleteAllEmotion);
 router.get('/userByDate/:user_id', controller.getEmotionsforUserIDbyDate);
 router.put('/updatePassword', controller.putPasswordChange);
 
