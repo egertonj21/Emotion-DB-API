@@ -326,3 +326,28 @@ exports.getEmotionsforUserIDbyDate = (req, res) => {
         }
     });
 };
+
+exports.putPasswordChange = (req, res) => {
+    const { email, newPassword } = req.body;
+
+    // Query to update the user's password in the database
+    const updateSQL = 'UPDATE users SET hashed_password = ? WHERE email = ?';
+
+    // Hash the new password before updating it in the database
+    bcrypt.hash(newPassword, 10, (err, hashedNewPassword) => {
+        if (err) {
+            console.error('Error hashing new password:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Update the user's password in the database
+        conn.query(updateSQL, [hashedNewPassword, email], (err, results) => {
+            if (err) {
+                console.error('Error updating password:', err);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+};
