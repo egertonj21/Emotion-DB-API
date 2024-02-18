@@ -257,7 +257,7 @@ exports.deleteEmotion = (req, res) => {
 };
 
 exports.deleteAll = (req, res) => {
-    const { user_id } = req.body;
+    const { user_id } = req.params;
 
     const deleteSQL = "DELETE FROM emotion WHERE user_id = ?";
     const deleteUserSQL = "DELETE FROM users WHERE user_id = ?";
