@@ -16,4 +16,16 @@ db.connect((err) => {
     }
 });
 
-module.exports = db;
+const query = (sql, params) => {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, (error, rows) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+};
+
+module.exports = {db, query};

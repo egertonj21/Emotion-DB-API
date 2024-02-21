@@ -1,374 +1,239 @@
 const conn = require('./../utils/dbconn');
+const { query } = require('./../utils/dbconn');
 const bcrypt = require('bcrypt');
-const saltRounds = 10;
+require('dotenv').config({ path: './config.env' });
+const saltRounds = Number(process.env.SALT_ROUNDS);
 const dayjs = require('dayjs');
 var localizedFormat = require('dayjs/plugin/localizedFormat');
 dayjs.extend(localizedFormat);
+const userService = require('../services/userService');
 dayjs().format('LLL');
-
-
-exports.getUserHashedPassword = (req, res) => {
-    const { email, password } = req.body;
-    const selectSQL = 'SELECT hashed_password FROM users WHERE email =?';
-
-    conn.query(selectSQL, [email], (error, rows) =>{
-        if(error) {
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: 'Database error'
-            });
-        }
-        if (rows.length ===0){
-            res.status(404);
-            return res.json({
-                status:'failure',
-                message: 'User not found'
-            });
-        }
-    const hashedPassword = rows[0].hashed_password
-    bcrypt.compare(password, hashedPassword, function(error, result){
-        if (error) {
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: 'password comparison error'
-            });
-        }
-        if(result){
-            res.status(200);
-            return res.json({
-                status: 'success',
-                message: 'Password matches'
-            });
-        }else{
-            res.status(401);
-            return res.json({
-                status: 'failure',
-                message: 'Incorrect password'
-            });
-        }
-    
-    
-    });
-});
+const sendResponse = (res, status, message, data = null) => {
+    const response = {
+    status: status < 400 ? 'success' : 'failure',
+    message: message,
+    };
+    if (data) {
+    response.data = data;
+    }
+    res.status(status).json(response);
 };
 
-exports.getEmotionsForUserID = (req, res) => {
+exports.getUserHashedPassword = async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return sendResponse(res, 400, 'Email and password are required');
+    }
+    try {
+        const hashedPassword = await userService.getHashedPassword(email);
+        await userService.comparePasswords(password, hashedPassword);
+        return sendResponse(res, 200, 'Password matches');
+    } catch (error) {
+        let statusCode = 500;
+        if (error.message === 'User not found') {
+            statusCode = 404;
+        } else if (error.message === 'Incorrect password') {
+            statusCode = 401;
+        }
+        return sendResponse(res, statusCode, error.message);
+    }
+};
+
+
+exports.getEmotionsForUserID = async (req, res) => {
     const { user_id } = req.params;
     const selectSQL = 'SELECT * FROM emotion WHERE user_id = ?';
     console.log("SQL Query:", selectSQL, [user_id]);
-    
-    conn.query(selectSQL, [user_id], (error, rows) => {
-        console.log(user_id);
-        if (error) {
-            res.status(500).json({
-                status: 'failure',
-                message: error
-            });
+    try {
+        const rows = await query(selectSQL, [user_id]);
+        if (rows.length > 0) {
+            sendResponse(res, 200, `${rows.length} record(s) retrieved`, rows);
         } else {
-            if (rows.length > 0) {
-                res.status(200).json({
-                    status: 'success',
-                    message: `${rows.length} record(s) retrieved`,
-                    result: rows
-                });
-            } else {
-                res.status(404).json({
-                    status: 'failure',
-                    message: 'No records found for the specified user ID'
-                });
-            }
+            sendResponse(res, 404, 'No records found for the specified user ID');
         }
-    });
+    } catch (error) {
+        console.error(error);
+        sendResponse(res, 500, 'Server error. Please try again later.');
+    }
 };
 
-exports.getUserIDFromEmail = (req, res) => {
+exports.getUserIDFromEmail = async (req, res) => {
     const { email } = req.params;
     const selectSQL = 'SELECT user_id from users WHERE email = ?';
-    console.log("SQL Query:", selectSQL, [email]);
-    conn.query(selectSQL, [email], (error, rows) => {
-        if (error) {
-            console.error("Error executing SQL query:", error);
-            res.status(500).json({
-                status: 'failure',
-                message: 'An error occurred while fetching user ID'
-            });
+
+    try {
+        const rows = await query(selectSQL, [email]);
+        console.log("SQL Query:", selectSQL, [email]);
+
+        if (rows.length > 0) {
+            sendResponse(res, 200, `User ID for user ${email} retrieved`, rows[0].user_id);
         } else {
-            if (rows.length > 0) {
-                res.status(200).json({
-                    status: 'success',
-                    message: `User ID for user ${email} retrieved`,
-                    result: rows
-                });
-            } else {
-                res.status(404).json({
-                    status: 'failure',
-                    message: 'User not found'
-                });
-            }
+            sendResponse(res, 404, `User with email ${email} not found`);
         }
-    });
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        sendResponse(res, 500, `An error occurred while fetching user ID for email ${email}`);
+    }
 };
 
 
-exports.getEmotionfromEmotionID = (req, res) => {
+exports.getEmotionfromEmotionID = async (req, res) => {
     const { emotion_id } = req.params;
     const selectSQL = 'SELECT * from emotion WHERE emotion_id =?';
     console.log("SQL Query:", selectSQL, [emotion_id]);
-    conn.query(selectSQL, [emotion_id], (error, rows) => {
-        if (error) {
-            res.status(500);
-            res.json({
-                status: 'failure',
-                message: error
-            });
+
+    try {
+        const rows = await query(selectSQL, [emotion_id]);
+        if (rows.length > 0) {
+            sendResponse(res, 200, `emotion_id ${emotion_id} retrieved`, rows);
         } else {
-            if(rows.length >0){
-                res.status(200);
-                res.json({
-                    status: 'success',
-                    message: `emotion_id${emotion_id} retrieved`,
-                    result: rows
-                });
-            }else{
-                res.status(404);
-                res.json({
-                    status:'failure',
-                    message:'Invalid ID'
-                });
-            }
+            sendResponse(res, 404, 'Invalid ID');
         }
-    });
+    } catch (error) {
+        console.error("Error executing SQL query:", error);
+        sendResponse(res, 500, 'An error occurred while fetching emotion ID');
+    }
 };
 
 
-exports.postInsertUser = (req, res) => {
+exports.postInsertUser = async (req, res) => {
     const { email, password } = req.body;
     console.log(email);
     console.log(password);
 
-    // Generate a salt and hash the password
-    bcrypt.genSalt(saltRounds, function(error, salt) {
-        bcrypt.hash(password, salt, function(err, hashedPassword) {
-            // Handle any errors during hashing
-            if (err) {
-                res.status(500);
-                return res.json({
-                    status: 'failure',
-                    message: 'Error hashing password'
-                });
-            }
+    try {
+        // Generate a salt and hash the password
+        const salt = await bcrypt.genSalt(saltRounds);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-            // Construct the SQL query to insert user data into the database
-            const insertSQL = 'INSERT INTO users (email, hashed_password) VALUES (?, ?)';
-            console.log("SQL Query:", insertSQL, [email, hashedPassword]);
+        // Construct the SQL query to insert user data into the database
+        const insertSQL = 'INSERT INTO users (email, hashed_password) VALUES (?, ?)';
+        console.log("SQL Query:", insertSQL, [email, hashedPassword]);
 
-            // Execute the SQL query
-            conn.query(insertSQL, [email, hashedPassword], (error, rows) => {
-                if (error) {
-                    res.status(500);
-                    return res.json({
-                        status: 'failure',
-                        message: error
-                    });
-                } else {
-                    res.status(200);
-                    return res.json({
-                        status: 'success',
-                        message: `User ${email} added to database`,
-                        result: rows
-                    });
-                }
-            });
-        });
-    });
+        // Execute the SQL query
+        const rows = await query(insertSQL, [email, hashedPassword]);
+        sendResponse(res, 200, `User ${email} added to database`, rows);
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while adding user to database');
+    }
 };
 
-exports.postInsertEmotionLog = (req, res) => {
+exports.postInsertEmotionLog = async (req, res) => {
     const { user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, triggers } = req.body;
     const timestamp = dayjs().format('YYYY-MM-DD HH:mm:ss');
+
     // Construct the SQL query to insert emotion data into the database
     const insertSQL = 'INSERT INTO emotion (user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
     console.log("SQL Query:", insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers]);
 
-    // Execute the SQL query
-    conn.query(insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers], (error, rows) => {
-        if (error) {
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: error
-            });
-        } else {
-            res.status(200);
-            return res.json({
-                status: 'success',
-                message: `emotion added to database for user ${user_id}`,
-                result: rows
-            });
-        }
-    });
+    try {
+        // Execute the SQL query
+        const rows = await query(insertSQL, [user_id, enjoyment, sadness, anger, contempt, disgust, fear, surprise, timestamp, triggers]);
+        sendResponse(res, 200, `emotion added to database for user ${user_id}`, rows);
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while adding emotion to database');
+    }
 };
 
-exports.putChangeTrigger = (req, res) => {
+exports.putChangeTrigger = async (req, res) => {
     const { emotion_id, triggers } = req.body;
-    
     const insertSQL = "UPDATE emotion SET triggers = ? WHERE emotion_id = ?";
 
-    conn.query(insertSQL, [triggers, emotion_id], (error, rows) => {
-        if(error){
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: error
-            });
-        }else {
-            res.status(200);
-            return res.json({
-                status: 'success',
-                message: `triggers for emotion_id ${emotion_id} successfully updated`,
-                result: rows
-            });
-        }
-    });
+    try {
+        const rows = await query(insertSQL, [triggers, emotion_id]);
+        sendResponse(res, 200, `triggers for emotion_id ${emotion_id} successfully updated`, rows);
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while updating triggers');
+    }
 };
 
-exports.deleteEmotion = (req, res) => {
-    const { emotion_id} = req.params;
-
+exports.deleteEmotion = async (req, res) => {
+    const { emotion_id } = req.params;
     const deleteSQL = "DELETE FROM emotion WHERE emotion_id = ?";
-    conn.query(deleteSQL, [emotion_id], (error, rows) =>{
-        if(error){
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: error
-            });
-        }else {
-            res.status(200);
-            return res.json({
-                status: 'success',
-                message: `emotion_id ${emotion_id}, successfully deleted`,
-                result: rows
-            });
-        }
-    });
+
+    try {
+        const rows = await query(deleteSQL, [emotion_id]);
+        sendResponse(res, 200, `emotion_id ${emotion_id}, successfully deleted`, rows);
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while deleting emotion');
+    }
 };
 
-exports.deleteAll = (req, res) => {
-    const { user_id } = req.params;
 
+exports.deleteAll = async (req, res) => {
+    const { user_id } = req.params;
     const deleteSQL = "DELETE FROM emotion WHERE user_id = ?";
     const deleteUserSQL = "DELETE FROM users WHERE user_id = ?";
     console.log(user_id);
-    conn.query(deleteSQL, [user_id], (error, emotionRows) => {
-        if (error) {
-            res.status(500);
-            return res.json({
-                status: 'failure',
-                message: error
-            });
-        } else {
-            // If the emotion deletion was successful, proceed to delete the user
-            conn.query(deleteUserSQL, [user_id], (error, userRows) => {
-                if (error) {
-                    res.status(500);
-                    return res.json({
-                        status: 'failure',
-                        message: error
-                    });
-                } else {
-                    res.status(200);
-                    return res.json({
-                        status: 'success',
-                        message: `Logs and user deleted for user ${user_id}`,
-                        emotionResult: emotionRows,
-                        userResult: userRows
-                    });
-                }
-            });
-        }
-    });
+
+    try {
+        const emotionRows = await query(deleteSQL, [user_id]);
+        // If the emotion deletion was successful, proceed to delete the user
+        const userRows = await query(deleteUserSQL, [user_id]);
+        sendResponse(res, 200, `Logs and user deleted for user ${user_id}`, {emotionResult: emotionRows, userResult: userRows});
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while deleting logs and user');
+    }
 };
 
-exports.getEmotionsforUserIDbyDate = (req, res) => {
-    const { user_id } = req.params; 
+
+
+exports.getEmotionsforUserIDbyDate = async (req, res) => {
+    const { user_id } = req.params;
     const startDate = req.query.startDate;
     const endDate = req.query.endDate;
     const selectSQL = "SELECT * FROM emotion WHERE user_id = ? AND timestamp BETWEEN ? and ?";
     console.log("SQL Query:", selectSQL, [user_id]);
-    conn.query(selectSQL, [user_id, startDate, endDate], (error, rows) => { 
+
+    try {
+        const rows = await query(selectSQL, [user_id, startDate, endDate]);
         console.log(user_id);
-        if (error) {
-            res.status(500);
-            res.json({
-                status: 'failure',
-                message: error
-            });
+
+        if (rows.length > 0) {
+            sendResponse(res, 200, `${rows.length} records retrieved`, rows);
         } else {
-            if(rows.length >0){
-                res.status(200);
-                res.json({
-                    status: 'success',
-                    message: `${rows.length} records retrieved`,
-                    result: rows
-                });
-            }else{
-                res.status(404);
-                res.json({
-                    status:'failure',
-                    message:'Invalid ID'
-                });
-            }
+            sendResponse(res, 404, 'Invalid ID');
         }
-    });
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while retrieving records');
+    }
 };
 
-exports.putPasswordChange = (req, res) => {
-    const { email, newPassword } = req.body;
 
+exports.putPasswordChange = async (req, res) => {
+    const { email, newPassword } = req.body;
     // Query to update the user's password in the database
     const updateSQL = 'UPDATE users SET hashed_password = ? WHERE email = ?';
 
-    // Hash the new password before updating it in the database
-    bcrypt.hash(newPassword, 10, (err, hashedNewPassword) => {
-        if (err) {
-            console.error('Error hashing new password:', err);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-
+    try {
+        // Hash the new password before updating it in the database
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         // Update the user's password in the database
-        conn.query(updateSQL, [hashedNewPassword, email], (err, results) => {
-            if (err) {
-                console.error('Error updating password:', err);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
-
-            res.status(200).json({ message: 'Password updated successfully' });
-        });
-    });
+        await query(updateSQL, [hashedNewPassword, email]);
+        sendResponse(res, 200, 'Password updated successfully');
+    } catch (error) {
+        console.error("Error:", error);
+        sendResponse(res, 500, 'An error occurred while updating password');
+    }
 };
-exports.deleteAllEmotion = (req, res) => {
-    const { user_id } = req.params;
 
+exports.deleteAllEmotion = async (req, res) => {
+    const { user_id } = req.params;
     const deleteSQL = "DELETE FROM emotion WHERE user_id = ?";
-    
     console.log(user_id);
-    conn.query(deleteSQL, [user_id], (error, emotionRows) => {
-        if (error) {
-            console.error('Error deleting emotions:', error);
-            res.status(500).json({
-                status: 'failure',
-                message: 'Could not delete emotions'
-            });
-            // End the request-response cycle
-            return;
-        } 
+
+    try {
+        await query(deleteSQL, [user_id]);
         // Send a success response
-        res.status(200).json({
-            status: 'success',
-            message: 'Emotions deleted successfully'
-        });
-    });
+        sendResponse(res, 200, 'Emotions deleted successfully');
+    } catch (error) {
+        console.error('Error deleting emotions:', error);
+        sendResponse(res, 500, 'Could not delete emotions');
+    }
 };
