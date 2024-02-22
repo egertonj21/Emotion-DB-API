@@ -185,14 +185,15 @@ exports.deleteAll = async (req, res) => {
 
 exports.getEmotionsforUserIDbyDate = async (req, res) => {
     const { user_id } = req.params;
-    const startDate = req.query.startDate;
-    const endDate = req.query.endDate;
+    const startDate = req.body.startDate;
+    const endDate = req.body.endDate;
     const selectSQL = "SELECT * FROM emotion WHERE user_id = ? AND timestamp BETWEEN ? and ?";
-    console.log("SQL Query:", selectSQL, [user_id]);
+    console.log("SQL Query:", selectSQL, [user_id, startDate, endDate]);
 
     try {
         const rows = await query(selectSQL, [user_id, startDate, endDate]);
         console.log(user_id);
+        
 
         if (rows.length > 0) {
             sendResponse(res, 200, `${rows.length} records retrieved`, rows);
