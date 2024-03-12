@@ -100,22 +100,26 @@ exports.postInsertUser = async (req, res) => {
     const { email, password } = req.body;
     console.log(email);
     console.log(password);
-
     try {
-        // Generate a salt and hash the password
-        const salt = await bcrypt.genSalt(saltRounds);
-        const hashedPassword = await bcrypt.hash(password, salt);
+      // Check if the email already exists in the database
+        const checkSQL = 'SELECT * FROM users WHERE email = ?';
+        const users = await query(checkSQL, [email]);
+        if (users.length > 0) {
+            return sendResponse(res, 400, 'Email already exists');
+    }
 
-        // Construct the SQL query to insert user data into the database
-        const insertSQL = 'INSERT INTO users (email, hashed_password) VALUES (?, ?)';
-        console.log("SQL Query:", insertSQL, [email, hashedPassword]);
-
-        // Execute the SQL query
-        const rows = await query(insertSQL, [email, hashedPassword]);
-        sendResponse(res, 200, `User ${email} added to database`, rows);
+      // Generate a salt and hash the password
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    // Construct the SQL query to insert user data into the database
+    const insertSQL = 'INSERT INTO users (email, hashed_password) VALUES (?, ?)';
+    console.log("SQL Query:", insertSQL, [email, hashedPassword]);
+      // Execute the SQL query
+    const rows = await query(insertSQL, [email, hashedPassword]);
+    sendResponse(res, 200, `User ${email} added to database`, rows);
     } catch (error) {
-        console.error("Error:", error);
-        sendResponse(res, 500, 'An error occurred while adding user to database');
+    console.error("Error:", error);
+    sendResponse(res, 500, 'An error occurred while adding user to database');
     }
 };
 
